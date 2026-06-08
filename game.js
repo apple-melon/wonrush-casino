@@ -2152,6 +2152,7 @@ document.addEventListener('click', e => {
   showScreen('screen-' + dest);
   if (dest === 'workplace') renderJobList();
   if (dest === 'ranking') renderRanking();
+  if (dest === 'stocks') renderStockList();
 });
 
 /* ============================================================
@@ -3307,7 +3308,7 @@ async function lbPush() {
     await fetch(`${SB_URL}/rest/v1/leaderboard?on_conflict=client_id`, {
       method: 'POST',
       headers: { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ client_id: myClientId, name: myNick.slice(0, 12), money: Math.floor(state.money) }),
+      body: JSON.stringify({ client_id: myClientId, name: myNick.slice(0, 12), money: Math.floor(netWorth()) }),
     });
   } catch (e) { /* 무시 */ }
 }
@@ -3321,7 +3322,7 @@ function schedulePush() {
 function myBoard() {
   const arr = lbCache.filter(r => r.client_id !== myClientId)
     .map(r => ({ name: r.name, money: r.money, me: false }));
-  arr.push({ name: myNick, money: Math.floor(state.money), me: true });
+  arr.push({ name: myNick, money: Math.floor(netWorth()), me: true });
   arr.sort((a, b) => b.money - a.money);
   return arr;
 }
@@ -3387,6 +3388,236 @@ function lbInit() {
   }
 }
 
+/* ============================================================
+   모의 주식 시장 (실제 기업명 변형 30종목)
+   ============================================================ */
+const STOCKS = [
+  { n: '사성전자', e: '💻', p: 71000, v: 0.014 },
+  { n: 'SG하이닉스', e: '💾', p: 128000, v: 0.020 },
+  { n: '카커오', e: '💬', p: 48000, v: 0.024 },
+  { n: '네이비', e: '🟩', p: 195000, v: 0.020 },
+  { n: 'KG전자', e: '🔌', p: 95000, v: 0.016 },
+  { n: '현태차', e: '🚗', p: 240000, v: 0.016 },
+  { n: '기야차', e: '🚙', p: 98000, v: 0.017 },
+  { n: '팔성사이다', e: '🥤', p: 135000, v: 0.012 },
+  { n: '논심', e: '🍜', p: 410000, v: 0.011 },
+  { n: '오뚝이', e: '🍲', p: 430000, v: 0.010 },
+  { n: '빙구레', e: '🍦', p: 62000, v: 0.013 },
+  { n: '롯테제과', e: '🍫', p: 118000, v: 0.012 },
+  { n: '신나면', e: '🍥', p: 1500, v: 0.030 },
+  { n: '새우캉', e: '🦐', p: 1200, v: 0.032 },
+  { n: '쿠퐁', e: '📦', p: 32000, v: 0.030 },
+  { n: '당콩마켓', e: '🥕', p: 8500, v: 0.035 },
+  { n: '배달의시민', e: '🛵', p: 15000, v: 0.030 },
+  { n: '토수', e: '💳', p: 22000, v: 0.030 },
+  { n: '에플', e: '🍏', p: 305000, v: 0.014 },
+  { n: '그글', e: '🔍', p: 198000, v: 0.016 },
+  { n: '마이크로소포트', e: '🪟', p: 520000, v: 0.013 },
+  { n: '테슬러', e: '⚡', p: 360000, v: 0.030 },
+  { n: '엔비디어', e: '🎮', p: 1450000, v: 0.030 },
+  { n: '아마종', e: '🛒', p: 240000, v: 0.018 },
+  { n: '넷플럭스', e: '🎬', p: 720000, v: 0.020 },
+  { n: '디지니', e: '🏰', p: 130000, v: 0.017 },
+  { n: '나이커', e: '👟', p: 110000, v: 0.015 },
+  { n: '스타박스', e: '☕', p: 98000, v: 0.014 },
+  { n: '비트코언', e: '🪙', p: 95000000, v: 0.050 },
+  { n: '도지코언', e: '🐕', p: 180, v: 0.070 },
+];
+const STOCK_HIST = 80;
+let prices = {}, openPrices = {}, histories = {};
+let selectedStock = null;
+let stockSaveTick = 0;
+
+function stockInit() {
+  state.holdings = state.holdings || {};
+  const saved = state.prices || {};
+  for (const s of STOCKS) {
+    prices[s.n] = saved[s.n] > 0 ? saved[s.n] : s.p;
+    openPrices[s.n] = prices[s.n];
+    histories[s.n] = [prices[s.n]];
+  }
+}
+function stockFloor(s) { return Math.max(s.p * 0.05, 1); }
+
+function stockTick() {
+  for (const s of STOCKS) {
+    let p = prices[s.n];
+    const shock = (Math.random() - 0.5) * 2 * s.v;
+    p *= (1 + 0.0004 + shock);
+    if (Math.random() < 0.012) p *= (1 + (Math.random() - 0.5) * s.v * 7); // 뉴스 급등락
+    prices[s.n] = Math.max(stockFloor(s), p);
+    const h = histories[s.n];
+    h.push(prices[s.n]);
+    if (h.length > STOCK_HIST) h.shift();
+  }
+  state.prices = prices;
+  if (++stockSaveTick % 3 === 0) save();
+  updateRank(); // 총자산 변동 → 랭킹/푸시
+  if ($('#screen-stocks').offsetParent) renderStockList();
+  if ($('#screen-stock-detail').offsetParent) renderStockDetail();
+}
+
+function stockValue() {
+  let v = 0;
+  for (const s of STOCKS) {
+    const h = state.holdings[s.n];
+    if (h && h.shares > 0 && prices[s.n]) v += h.shares * prices[s.n];
+  }
+  return v;
+}
+function netWorth() { return state.money + stockValue(); }
+function unrealizedPL() {
+  let pl = 0;
+  for (const s of STOCKS) {
+    const h = state.holdings[s.n];
+    if (h && h.shares > 0) pl += h.shares * prices[s.n] - h.cost;
+  }
+  return pl;
+}
+function changePct(name) { return (prices[name] / openPrices[name] - 1) * 100; }
+
+function renderPort() {
+  $('#port-cash').textContent = fmtShort(state.money);
+  $('#port-stock').textContent = fmtShort(stockValue());
+  $('#port-total').textContent = fmtShort(netWorth());
+  const pl = unrealizedPL();
+  const el = $('#port-pl');
+  el.textContent = `평가손익 ${pl >= 0 ? '+' : '−'}${fmtShort(Math.abs(pl))}`;
+  el.className = 'port-pl ' + (pl >= 0 ? 'up' : 'down');
+}
+function renderStockList() {
+  renderPort();
+  const list = $('#stock-list');
+  let html = '';
+  for (const s of STOCKS) {
+    const h = state.holdings[s.n];
+    const owned = h && h.shares > 0;
+    const chg = changePct(s.n);
+    html += `<div class="stock-row ${owned ? 'owned' : ''}" data-name="${escHtml(s.n)}">
+      <span class="st-emoji">${s.e}</span>
+      <span class="st-name">${escHtml(s.n)}${owned ? `<small>보유 ${h.shares}주</small>` : ''}</span>
+      <span class="st-price">${fmt(prices[s.n])}</span>
+      <span class="st-chg ${chg >= 0 ? 'up' : 'down'}">${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%</span>
+    </div>`;
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('.stock-row').forEach(row => {
+    row.addEventListener('click', () => openStock(row.dataset.name));
+  });
+}
+
+function openStock(name) {
+  selectedStock = name;
+  $('#sd-qty').value = 1;
+  showScreen('screen-stock-detail');
+  renderStockDetail();
+}
+function renderStockDetail() {
+  const name = selectedStock;
+  if (!name) return;
+  const s = STOCKS.find(x => x.n === name);
+  $('#sd-name').textContent = s.e + ' ' + name;
+  $('#sd-price').textContent = fmt(prices[name]);
+  const chg = changePct(name);
+  const chgEl = $('#sd-chg');
+  chgEl.textContent = `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
+  chgEl.className = 'sd-chg ' + (chg >= 0 ? 'up' : 'down');
+  const h = state.holdings[name];
+  const hEl = $('#sd-holding');
+  if (h && h.shares > 0) {
+    const val = h.shares * prices[name];
+    const pl = val - h.cost;
+    const plp = (pl / h.cost * 100);
+    hEl.innerHTML = `보유 <b>${h.shares}주</b> · 평단 <b>${fmt(h.cost / h.shares)}</b> · 평가 <b>${fmt(val)}</b> · 손익 <span class="${pl >= 0 ? 'pl-up' : 'pl-down'}">${pl >= 0 ? '+' : '−'}${fmt(Math.abs(pl))} (${plp >= 0 ? '+' : ''}${plp.toFixed(1)}%)</span>`;
+  } else {
+    hEl.textContent = '보유 없음';
+  }
+  updateSdCost();
+  drawStockChart(name);
+}
+function updateSdCost() {
+  if (!selectedStock) return;
+  const qty = Math.max(1, parseInt($('#sd-qty').value) || 1);
+  $('#sd-cost').textContent = `주문 금액 ${fmt(prices[selectedStock] * qty)}`;
+}
+function drawStockChart(name) {
+  const cv = $('#stock-chart'), ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, pad = 8;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0e0b16'; ctx.fillRect(0, 0, W, H);
+  const h = histories[name];
+  if (!h || h.length < 2) return;
+  let lo = Math.min(...h), hi = Math.max(...h);
+  if (hi === lo) { hi += 1; lo -= 1; }
+  const x = i => pad + i / (h.length - 1) * (W - pad * 2);
+  const y = p => H - pad - (p - lo) / (hi - lo) * (H - pad * 2);
+  const up = h[h.length - 1] >= h[0];
+  const col = up ? '#5ef0a0' : '#ff5d7a';
+  // 면적
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, up ? 'rgba(94,240,160,.28)' : 'rgba(255,93,122,.28)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(h[0]));
+  for (let i = 1; i < h.length; i++) ctx.lineTo(x(i), y(h[i]));
+  ctx.lineTo(x(h.length - 1), H - pad); ctx.lineTo(x(0), H - pad); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  // 라인
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(h[0]));
+  for (let i = 1; i < h.length; i++) ctx.lineTo(x(i), y(h[i]));
+  ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+  ctx.shadowColor = col; ctx.shadowBlur = 8; ctx.stroke(); ctx.shadowBlur = 0;
+}
+
+function stockBuy() {
+  const name = selectedStock; if (!name) return;
+  const qty = Math.max(1, parseInt($('#sd-qty').value) || 1);
+  const cost = Math.ceil(prices[name] * qty);
+  if (!spend(cost)) return;
+  const h = state.holdings[name] || { shares: 0, cost: 0 };
+  h.shares += qty; h.cost += cost;
+  state.holdings[name] = h; save();
+  snd.coin();
+  const el = $('#sd-result');
+  el.textContent = `📈 ${qty}주 매수 — ${fmt(cost)}`;
+  el.className = 'result-line';
+  renderStockDetail();
+}
+function stockSell() {
+  const name = selectedStock; if (!name) return;
+  const h = state.holdings[name];
+  if (!h || h.shares <= 0) { toast('보유 주식이 없어요!', 'bad'); return; }
+  let qty = Math.max(1, parseInt($('#sd-qty').value) || 1);
+  qty = Math.min(qty, h.shares);
+  const proceeds = Math.floor(prices[name] * qty);
+  const avg = h.cost / h.shares;
+  const pl = proceeds - avg * qty;
+  h.cost -= avg * qty; h.shares -= qty;
+  if (h.shares <= 0) { h.shares = 0; h.cost = 0; }
+  state.holdings[name] = h;
+  addMoney(proceeds);
+  const el = $('#sd-result');
+  if (pl >= 0) { winFX(proceeds, $('#stock-chart')); el.textContent = `💰 ${qty}주 매도 — ${fmt(proceeds)} (+${fmt(pl)})`; el.className = 'result-line win'; }
+  else { loseFX(); el.textContent = `📉 ${qty}주 매도 — ${fmt(proceeds)} (${fmt(pl)})`; el.className = 'result-line lose'; }
+  renderStockDetail();
+}
+
+document.querySelectorAll('.sd-qty [data-q]').forEach(b => {
+  b.addEventListener('click', () => {
+    const q = Math.max(1, (parseInt($('#sd-qty').value) || 1) + parseInt(b.dataset.q));
+    $('#sd-qty').value = q; updateSdCost();
+  });
+});
+$('#sd-maxbuy').addEventListener('click', () => {
+  if (!selectedStock) return;
+  const max = Math.floor(state.money / prices[selectedStock]);
+  $('#sd-qty').value = Math.max(1, max); updateSdCost();
+});
+$('#sd-qty').addEventListener('input', updateSdCost);
+$('#sd-buy').addEventListener('click', stockBuy);
+$('#sd-sell').addEventListener('click', stockSell);
+
 /* ================= 시작 ================= */
 load();
 state.hired = state.hired || {};
@@ -3422,7 +3653,12 @@ diceUpdateInfo();
 minesUpdateInfo();
 renderJobList();
 
-// 부자 랭킹 시작 (Supabase 공용)
+// 주식 시장 시작 (랭킹보다 먼저 — 총자산 계산에 필요)
+stockInit();
+renderStockList();
+setInterval(stockTick, 2000);
+
+// 부자 랭킹 시작 (Supabase 공용, 총자산 = 현금 + 주식평가 기준)
 lbInit();
 
 showScreen('screen-home');

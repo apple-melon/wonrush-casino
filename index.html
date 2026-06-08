@@ -52,6 +52,12 @@
         <div class="hc-desc">운에 모든 걸 맡기고<br>한 방을 노린다</div>
         <div class="hc-tag">복권 · 룰렛 · 슬롯 외</div>
       </button>
+      <button class="home-card hc-stock" data-go="stocks">
+        <div class="hc-icon">📈</div>
+        <div class="hc-name">주식</div>
+        <div class="hc-desc">기업에 투자해<br>자산을 불린다</div>
+        <div class="hc-tag">30개 종목 · 모의투자</div>
+      </button>
     </div>
     <button class="home-rank" data-go="ranking">
       🏆 실시간 부자 랭킹 보기 — 현재 <b id="home-rank-num">--</b>위
@@ -73,6 +79,53 @@
       <span class="rank-status" id="rank-status"></span>
     </div>
     <div class="rank-list" id="rank-list"></div>
+  </div>
+
+  <!-- ============================================================
+       STOCKS — 모의 주식 시장
+       ============================================================ -->
+  <div class="screen" id="screen-stocks">
+    <div class="back-bar">
+      <button class="back-btn" data-go="home">←</button>
+      <span class="bar-title">📈 주식 시장</span>
+    </div>
+    <div class="port-summary">
+      <div class="port-cell"><span>현금</span><b id="port-cash">₩0</b></div>
+      <div class="port-cell"><span>주식 평가</span><b id="port-stock">₩0</b></div>
+      <div class="port-cell"><span>총 자산</span><b id="port-total" class="port-total">₩0</b></div>
+    </div>
+    <div class="port-pl" id="port-pl">평가손익 ₩0</div>
+    <div class="stock-list" id="stock-list"></div>
+  </div>
+
+  <!-- 종목 상세 -->
+  <div class="screen" id="screen-stock-detail">
+    <div class="back-bar">
+      <button class="back-btn" data-go="stocks">←</button>
+      <span class="bar-title" id="sd-name">종목</span>
+    </div>
+    <div class="card">
+      <div class="sd-head">
+        <div class="sd-price" id="sd-price">₩0</div>
+        <div class="sd-chg" id="sd-chg">+0.0%</div>
+      </div>
+      <div class="canvas-wrap"><canvas id="stock-chart" width="360" height="200"></canvas></div>
+      <div class="sd-holding" id="sd-holding">보유 없음</div>
+      <div class="sd-qty">
+        <button class="btn btn-small" data-q="-10">−10</button>
+        <button class="btn btn-small" data-q="-1">−1</button>
+        <input type="number" id="sd-qty" value="1" min="1" step="1">
+        <button class="btn btn-small" data-q="1">+1</button>
+        <button class="btn btn-small" data-q="10">+10</button>
+        <button class="btn btn-small" id="sd-maxbuy">최대</button>
+      </div>
+      <div class="sd-cost" id="sd-cost">주문 금액 ₩0</div>
+      <div class="row-3">
+        <button class="btn btn-big" id="sd-buy">매수 (BUY)</button>
+        <button class="btn btn-big" id="sd-sell">매도 (SELL)</button>
+      </div>
+      <div class="result-line" id="sd-result">&nbsp;</div>
+    </div>
   </div>
 
   <!-- ============================================================

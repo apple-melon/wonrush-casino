@@ -3296,6 +3296,8 @@ async function lbFetch() {
   try {
     const r = await fetch(`${SB_URL}/rest/v1/leaderboard?select=client_id,name,money&order=money.desc&limit=100`, { headers: sbHeaders() });
     if (!r.ok) return;
+    const d = r.headers.get('date'); // 서버 시각으로 시계 동기화 → 모두 같은 주가
+    if (d) { const off = Date.parse(d) - Date.now(); if (Math.abs(off) < 864e5) serverOffset = off; }
     lbCache = await r.json();
     updateRank(true);
     if ($('#screen-ranking').classList.contains('active')) renderRanking();
@@ -3423,35 +3425,52 @@ const STOCKS = [
   { n: '비트코언', e: '🪙', p: 95000000, v: 0.050 },
   { n: '도지코언', e: '🐕', p: 180, v: 0.070 },
 ];
-const STOCK_HIST = 80;
-let prices = {}, openPrices = {}, histories = {};
+const STOCK_HIST = 80;                 // 차트 샘플 점 개수
+const STOCK_WINDOW = 40 * 60 * 1000;   // 차트 표시 구간 (40분)
+let prices = {};                       // 표시용 캐시 (2초마다 갱신)
 let selectedStock = null;
-let stockSaveTick = 0;
+let serverOffset = 0;                  // (서버 시각 - 로컬 시각) — 모든 클라이언트 동기화
+const STOCK_BY = {};
+
+// 모든 플레이어가 동일한 "시장 시각"을 사용 → 동일한 가격
+function marketNow() { return Date.now() + serverOffset; }
+function stockFloor(s) { return Math.max(s.p * 0.05, 1); }
+
+// 종목 고유 시드로 결정론적 사인파 합성 (랜덤 아님 → 누구나 같은 곡선)
+function buildWaves(seed, v) {
+  let s = seed >>> 0;
+  const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  const periods = [16 * 3600e3, 3.5 * 3600e3, 45 * 60e3, 11 * 60e3, 95e3];
+  const weights = [4, 2.5, 1.6, 1.0, 0.6];
+  const waves = [];
+  for (let k = 0; k < periods.length; k++) {
+    waves.push({ amp: v * weights[k] * (0.7 + 0.6 * rnd()), period: periods[k] * (0.7 + 0.6 * rnd()), phase: rnd() * Math.PI * 2 });
+  }
+  return waves;
+}
+// 시각 t에서의 가격 — 순수 함수 (입력이 같으면 결과도 같다)
+function priceAt(s, t) {
+  let x = 0;
+  for (const w of s.waves) x += w.amp * Math.sin(2 * Math.PI * t / w.period + w.phase);
+  return Math.max(stockFloor(s), s.p * Math.exp(x));
+}
+function curPrice(name) { return priceAt(STOCK_BY[name], marketNow()); }
+function dayStart() { return Math.floor(marketNow() / 86400000) * 86400000; } // UTC 자정
 
 function stockInit() {
   state.holdings = state.holdings || {};
-  const saved = state.prices || {};
-  for (const s of STOCKS) {
-    prices[s.n] = saved[s.n] > 0 ? saved[s.n] : s.p;
-    openPrices[s.n] = prices[s.n];
-    histories[s.n] = [prices[s.n]];
+  for (let i = 0; i < STOCKS.length; i++) {
+    const s = STOCKS[i];
+    let h = 2166136261 >>> 0;
+    for (let c = 0; c < s.n.length; c++) h = Math.imul(h ^ s.n.charCodeAt(c), 16777619);
+    s.waves = buildWaves((h ^ Math.imul(i, 2654435761)) >>> 0, s.v);
+    STOCK_BY[s.n] = s;
+    prices[s.n] = priceAt(s, marketNow());
   }
 }
-function stockFloor(s) { return Math.max(s.p * 0.05, 1); }
 
 function stockTick() {
-  for (const s of STOCKS) {
-    let p = prices[s.n];
-    const shock = (Math.random() - 0.5) * 2 * s.v;
-    p *= (1 + 0.0004 + shock);
-    if (Math.random() < 0.012) p *= (1 + (Math.random() - 0.5) * s.v * 7); // 뉴스 급등락
-    prices[s.n] = Math.max(stockFloor(s), p);
-    const h = histories[s.n];
-    h.push(prices[s.n]);
-    if (h.length > STOCK_HIST) h.shift();
-  }
-  state.prices = prices;
-  if (++stockSaveTick % 3 === 0) save();
+  for (const s of STOCKS) prices[s.n] = priceAt(s, marketNow());
   updateRank(); // 총자산 변동 → 랭킹/푸시
   if ($('#screen-stocks').offsetParent) renderStockList();
   if ($('#screen-stock-detail').offsetParent) renderStockDetail();
@@ -3474,7 +3493,7 @@ function unrealizedPL() {
   }
   return pl;
 }
-function changePct(name) { return (prices[name] / openPrices[name] - 1) * 100; }
+function changePct(name) { const s = STOCK_BY[name]; return (curPrice(name) / priceAt(s, dayStart()) - 1) * 100; }
 
 function renderPort() {
   $('#port-cash').textContent = fmtShort(state.money);
@@ -3515,9 +3534,10 @@ function openStock(name) {
 function renderStockDetail() {
   const name = selectedStock;
   if (!name) return;
-  const s = STOCKS.find(x => x.n === name);
+  const s = STOCK_BY[name];
+  const px = curPrice(name);
   $('#sd-name').textContent = s.e + ' ' + name;
-  $('#sd-price').textContent = fmt(prices[name]);
+  $('#sd-price').textContent = fmt(px);
   const chg = changePct(name);
   const chgEl = $('#sd-chg');
   chgEl.textContent = `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
@@ -3525,7 +3545,7 @@ function renderStockDetail() {
   const h = state.holdings[name];
   const hEl = $('#sd-holding');
   if (h && h.shares > 0) {
-    const val = h.shares * prices[name];
+    const val = h.shares * px;
     const pl = val - h.cost;
     const plp = (pl / h.cost * 100);
     hEl.innerHTML = `보유 <b>${h.shares}주</b> · 평단 <b>${fmt(h.cost / h.shares)}</b> · 평가 <b>${fmt(val)}</b> · 손익 <span class="${pl >= 0 ? 'pl-up' : 'pl-down'}">${pl >= 0 ? '+' : '−'}${fmt(Math.abs(pl))} (${plp >= 0 ? '+' : ''}${plp.toFixed(1)}%)</span>`;
@@ -3538,15 +3558,21 @@ function renderStockDetail() {
 function updateSdCost() {
   if (!selectedStock) return;
   const qty = Math.max(1, parseInt($('#sd-qty').value) || 1);
-  $('#sd-cost').textContent = `주문 금액 ${fmt(prices[selectedStock] * qty)}`;
+  $('#sd-cost').textContent = `주문 금액 ${fmt(curPrice(selectedStock) * qty)}`;
 }
 function drawStockChart(name) {
   const cv = $('#stock-chart'), ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height, pad = 8;
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#0e0b16'; ctx.fillRect(0, 0, W, H);
-  const h = histories[name];
-  if (!h || h.length < 2) return;
+  // 시간 함수에서 최근 구간을 직접 샘플링 → 모든 클라이언트가 동일한 차트
+  const s = STOCK_BY[name];
+  const now = marketNow();
+  const h = [];
+  for (let i = 0; i < STOCK_HIST; i++) {
+    h.push(priceAt(s, now - STOCK_WINDOW + i / (STOCK_HIST - 1) * STOCK_WINDOW));
+  }
+  if (h.length < 2) return;
   let lo = Math.min(...h), hi = Math.max(...h);
   if (hi === lo) { hi += 1; lo -= 1; }
   const x = i => pad + i / (h.length - 1) * (W - pad * 2);
@@ -3573,7 +3599,7 @@ function drawStockChart(name) {
 function stockBuy() {
   const name = selectedStock; if (!name) return;
   const qty = Math.max(1, parseInt($('#sd-qty').value) || 1);
-  const cost = Math.ceil(prices[name] * qty);
+  const cost = Math.ceil(curPrice(name) * qty);
   if (!spend(cost)) return;
   const h = state.holdings[name] || { shares: 0, cost: 0 };
   h.shares += qty; h.cost += cost;
@@ -3590,7 +3616,7 @@ function stockSell() {
   if (!h || h.shares <= 0) { toast('보유 주식이 없어요!', 'bad'); return; }
   let qty = Math.max(1, parseInt($('#sd-qty').value) || 1);
   qty = Math.min(qty, h.shares);
-  const proceeds = Math.floor(prices[name] * qty);
+  const proceeds = Math.floor(curPrice(name) * qty);
   const avg = h.cost / h.shares;
   const pl = proceeds - avg * qty;
   h.cost -= avg * qty; h.shares -= qty;
@@ -3611,7 +3637,7 @@ document.querySelectorAll('.sd-qty [data-q]').forEach(b => {
 });
 $('#sd-maxbuy').addEventListener('click', () => {
   if (!selectedStock) return;
-  const max = Math.floor(state.money / prices[selectedStock]);
+  const max = Math.floor(state.money / curPrice(selectedStock));
   $('#sd-qty').value = Math.max(1, max); updateSdCost();
 });
 $('#sd-qty').addEventListener('input', updateSdCost);

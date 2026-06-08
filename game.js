@@ -3263,87 +3263,128 @@ function horseLoop() {
 }
 
 /* ============================================================
-   실시간 부자 랭킹
+   실시간 부자 랭킹 (Supabase 공용 DB)
+   값은 배포 직전 채워집니다. 비어 있으면 로컬(내 점수만) 표시.
    ============================================================ */
-const RANK_NAMES = ['김갑부', '이건물주', '박재벌', '최회장', '정코인', '한사장', '오부장', '강대표',
-  '윤투자', '임건설', '서대박', '권부자', '신토지', '황금손', '조갑부', '배포커', '남대인', '문주식'];
-let bots = [];
-let lastMyRank = 999;
+const SB_URL = 'https://jidkoudikbyaqwmkicum.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZGtvdWRpa2J5YXF3bWtpY3VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDk4MDksImV4cCI6MjA5NjQ4NTgwOX0.sZ0HPhtuviwtL95DlTYqwugKq6w6c4m9YdcaqrKSsMw';
+const sbEnabled = () => /^https:\/\/.+\.supabase\.co/.test(SB_URL);
 
+let lbCache = [];        // [{client_id, name, money}]
+let lastMyRank = 999;
+let pushTimer = 0, lastPushAt = 0;
+
+const myClientId = (() => {
+  let id = localStorage.getItem('wonrush-cid');
+  if (!id) { id = 'p_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem('wonrush-cid', id); }
+  return id;
+})();
+let myNick = state.nick || ('플레이어' + Math.floor(Math.random() * 9000 + 1000));
+
+function escHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function fmtShort(n) {
   n = Math.floor(n);
   if (n >= 1e8) return (n / 1e8).toFixed(1) + '억';
   if (n >= 1e4) return Math.floor(n / 1e4).toLocaleString('ko-KR') + '만';
   return '₩' + n.toLocaleString('ko-KR');
 }
-function initBots() {
-  const lo = 2500, hi = 80000000, n = RANK_NAMES.length;
-  const factor = Math.pow(hi / lo, 1 / (n - 1));
-  bots = RANK_NAMES.map((name, i) => ({
-    name,
-    money: Math.floor(lo * Math.pow(factor, i) * rand(0.7, 1.3)),
-    rate: rand(0.003, 0.018),
-  }));
+function sbHeaders() { return { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }; }
+
+async function lbFetch() {
+  if (!sbEnabled()) return;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/leaderboard?select=client_id,name,money&order=money.desc&limit=100`, { headers: sbHeaders() });
+    if (!r.ok) return;
+    lbCache = await r.json();
+    updateRank(true);
+    if ($('#screen-ranking').classList.contains('active')) renderRanking();
+  } catch (e) { /* 오프라인 무시 */ }
 }
-function botTick() {
-  for (const b of bots) {
-    b.money += b.money * rand(-0.004, b.rate) + rand(20, 400);
-    if (Math.random() < 0.02) b.money *= rand(1.04, 1.22); // 가끔 대박
-    if (b.money < 100) b.money = 100;
-  }
-  updateRank();
-  if ($('#screen-ranking').classList.contains('active')) renderRanking();
+async function lbPush() {
+  if (!sbEnabled()) return;
+  lastPushAt = Date.now();
+  try {
+    await fetch(`${SB_URL}/rest/v1/leaderboard?on_conflict=client_id`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ client_id: myClientId, name: myNick.slice(0, 12), money: Math.floor(state.money) }),
+    });
+  } catch (e) { /* 무시 */ }
 }
-function leaderboard() {
-  const all = bots.map(b => ({ name: b.name, money: b.money, me: false }));
-  all.push({ name: '나 (YOU)', money: state.money, me: true });
-  all.sort((a, b) => b.money - a.money);
-  return all;
+function schedulePush() {
+  if (!sbEnabled()) return;
+  clearTimeout(pushTimer);
+  const wait = Math.max(200, 3500 - (Date.now() - lastPushAt));
+  pushTimer = setTimeout(lbPush, wait);
 }
-function myRank() {
-  const lb = leaderboard();
-  return lb.findIndex(x => x.me) + 1;
+
+function myBoard() {
+  const arr = lbCache.filter(r => r.client_id !== myClientId)
+    .map(r => ({ name: r.name, money: r.money, me: false }));
+  arr.push({ name: myNick, money: Math.floor(state.money), me: true });
+  arr.sort((a, b) => b.money - a.money);
+  return arr;
 }
-function updateRank() {
-  if (!bots.length) return;
-  const rank = myRank();
-  const total = bots.length + 1;
-  const txt = '#' + rank;
-  $('#rank-num').textContent = txt;
+function updateRank(fromFetch) {
+  if (!fromFetch) schedulePush();
+  const b = myBoard();
+  const rank = b.findIndex(x => x.me) + 1;
+  $('#rank-num').textContent = '#' + rank;
   $('#home-rank-num').textContent = rank;
-  if (rank < lastMyRank) {
+  if (rank < lastMyRank && lastMyRank !== 999) {
     const badge = $('#rank-badge');
     badge.classList.remove('up'); void badge.offsetWidth; badge.classList.add('up');
-    if (lastMyRank !== 999) {
-      if (rank === 1) toast('👑 전국 1위 등극!!', 'good');
-      else if (rank <= 3 && lastMyRank > 3) toast(`🏆 TOP 3 진입! ${rank}위`, 'good');
-      else if (rank <= 10 && lastMyRank > 10) toast(`🏆 TOP 10 진입! ${rank}위`, 'good');
-    }
+    if (rank === 1) toast('👑 전 세계 1위 등극!!', 'good');
+    else if (rank <= 3 && lastMyRank > 3) toast(`🏆 TOP 3 진입! ${rank}위`, 'good');
+    else if (rank <= 10 && lastMyRank > 10) toast(`🏆 TOP 10 진입! ${rank}위`, 'good');
   }
   lastMyRank = rank;
 }
 function renderRanking() {
-  const lb = leaderboard();
+  const nick = $('#rank-nick');
+  if (document.activeElement !== nick) nick.value = myNick;
+  const status = $('#rank-status');
+  if (sbEnabled()) { status.textContent = `🟢 LIVE · 등록 ${lbCache.length}명`; status.className = 'rank-status live'; }
+  else { status.textContent = '⚪ 랭킹 서버 준비 중'; status.className = 'rank-status'; }
+  const b = myBoard();
   const list = $('#rank-list');
   const medals = ['🥇', '🥈', '🥉'];
-  const myIdx = lb.findIndex(x => x.me);
-  let html = '';
+  const myIdx = b.findIndex(x => x.me);
   const showTop = 12;
-  lb.slice(0, showTop).forEach((p, i) => {
+  let html = '';
+  b.slice(0, showTop).forEach((p, i) => {
     const pos = i < 3 ? medals[i] : (i + 1);
     html += `<div class="rank-row ${p.me ? 'me' : ''} top${i + 1}">
       <span class="rank-pos">${pos}</span>
-      <span class="rank-name">${p.name}</span>
+      <span class="rank-name">${escHtml(p.name)}${p.me ? ' (나)' : ''}</span>
       <span class="rank-money">${fmtShort(p.money)}</span></div>`;
   });
   if (myIdx >= showTop) {
     html += `<div class="rank-sep">···</div>`;
     html += `<div class="rank-row me">
       <span class="rank-pos">${myIdx + 1}</span>
-      <span class="rank-name">나 (YOU)</span>
+      <span class="rank-name">${escHtml(myNick)} (나)</span>
       <span class="rank-money">${fmtShort(state.money)}</span></div>`;
   }
   list.innerHTML = html;
+}
+
+$('#rank-nick').addEventListener('change', e => {
+  myNick = (e.target.value.trim() || myNick).slice(0, 12);
+  state.nick = myNick; save();
+  lbPush();
+  updateRank();
+  renderRanking();
+});
+
+function lbInit() {
+  updateRank(true);
+  renderRanking();
+  if (sbEnabled()) {
+    lbPush();
+    lbFetch();
+    setInterval(lbFetch, 4000);
+  }
 }
 
 /* ================= 시작 ================= */
@@ -3381,11 +3422,8 @@ diceUpdateInfo();
 minesUpdateInfo();
 renderJobList();
 
-// 부자 랭킹 시작
-initBots();
-updateRank();
-renderRanking();
-setInterval(botTick, 1500);
+// 부자 랭킹 시작 (Supabase 공용)
+lbInit();
 
 showScreen('screen-home');
 

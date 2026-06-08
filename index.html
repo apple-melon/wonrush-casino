@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WON RUSH CASINO — 돈벌자!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bg-spot spot-a"></div>
+<div class="bg-spot spot-b"></div>
+<canvas id="fx-canvas"></canvas>
+
+<div class="game" id="game">
+
+  <!-- ===== 헤더 (모든 화면 공통) ===== -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-main">WON RUSH</div>
+      <div class="logo-sub">✦ CITY ✦</div>
+    </div>
+    <div class="money-box">
+      <span class="money-label">BALANCE</span>
+      <span class="money" id="money">₩0</span>
+    </div>
+    <button class="rank-badge" id="rank-badge" data-go="ranking" title="부자 랭킹">🏆<span id="rank-num">--</span></button>
+    <div class="header-btns">
+      <button class="icon-btn" id="sound-btn" title="사운드">🔊</button>
+      <button class="icon-btn" id="reset-btn" title="초기화">↺</button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       HOME — 직장 / 카지노
+       ============================================================ -->
+  <div class="screen active" id="screen-home">
+    <div class="home-tagline">오늘은 어디서 돈을 벌까?</div>
+    <div class="home-cards">
+      <button class="home-card hc-work" data-go="workplace">
+        <div class="hc-icon">💼</div>
+        <div class="hc-name">직장</div>
+        <div class="hc-desc">정직하게 일해서<br>안정적으로 번다</div>
+        <div class="hc-tag">노동 · 입사 · 월급</div>
+      </button>
+      <button class="home-card hc-casino" data-go="casino">
+        <div class="hc-icon">🎰</div>
+        <div class="hc-name">카지노</div>
+        <div class="hc-desc">운에 모든 걸 맡기고<br>한 방을 노린다</div>
+        <div class="hc-tag">복권 · 룰렛 · 슬롯 외</div>
+      </button>
+    </div>
+    <button class="home-rank" data-go="ranking">
+      🏆 실시간 부자 랭킹 보기 — 현재 <b id="home-rank-num">--</b>위
+    </button>
+  </div>
+
+  <!-- ============================================================
+       RANKING — 실시간 부자 랭킹
+       ============================================================ -->
+  <div class="screen" id="screen-ranking">
+    <div class="back-bar">
+      <button class="back-btn" data-go="home">←</button>
+      <span class="bar-title">🏆 실시간 부자 랭킹</span>
+    </div>
+    <div class="rank-note">전국 큰손들과 실시간 경쟁! 돈을 벌어 정상에 오르세요.</div>
+    <div class="rank-list" id="rank-list"></div>
+  </div>
+
+  <!-- ============================================================
+       WORKPLACE — 구인 게시판
+       ============================================================ -->
+  <div class="screen" id="screen-workplace">
+    <div class="back-bar">
+      <button class="back-btn" data-go="home">←</button>
+      <span class="bar-title">💼 직장 — 구인 게시판</span>
+    </div>
+    <div class="board-note">하나를 골라 지원하세요. 월급이 높을수록 <b>입사시험</b>이 어렵습니다.</div>
+    <div class="job-list" id="job-list"></div>
+  </div>
+
+  <!-- ===== 일터: 아르바이트(노동) ===== -->
+  <div class="screen work-screen" id="screen-work-labor">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">🧽 아르바이트</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">단순 청소 <small>모든 부의 시작</small></div>
+      <div class="job-tabs">
+        <button class="btn job-tab active" data-job="dish">🍽 접시닦기 <em>₩50</em></button>
+        <button class="btn job-tab" data-job="floor">🧹 바닥닦기 <em>₩120</em></button>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="labor-canvas" width="360" height="300"></canvas>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="labor-fill"></div></div>
+      <div class="hint">마우스를 꾹 누른 채 문질러서 깨끗하게 청소하세요!</div>
+      <div class="stat-line">완료한 일감 <b id="labor-count">0</b>건</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: 카페 (바리스타) ===== -->
+  <div class="screen work-screen" id="screen-work-barista">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">☕ 카페 드림 — 바리스타</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">커피 정량 따르기 <small>잔당 ₩200</small></div>
+      <div class="canvas-wrap">
+        <canvas id="barista-canvas" width="300" height="300"></canvas>
+      </div>
+      <button class="btn btn-gold btn-big" id="barista-btn">☕ 꾹 눌러서 따르기</button>
+      <div class="hint">누르면 커피가 차오릅니다. <b>금색 띠</b> 안에서 손을 떼세요! 넘치면 실패.</div>
+      <div class="result-line" id="barista-result">&nbsp;</div>
+      <div class="stat-line">완성한 커피 <b id="barista-count">0</b>잔</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: 물류센터 (택배) ===== -->
+  <div class="screen work-screen" id="screen-work-courier">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">📦 번개 물류센터</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">택배 상자 분류 <small>1건 완료 시 ₩350</small></div>
+      <div class="canvas-wrap">
+        <canvas id="courier-canvas" width="360" height="320"></canvas>
+      </div>
+      <div class="hint">제한시간 안에 나타나는 <b>상자를 클릭</b>해서 트럭에 실으세요!</div>
+      <div class="result-line" id="courier-result">&nbsp;</div>
+      <div class="stat-line">오늘 배송 <b id="courier-count">0</b>건</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: IT기업 (코딩) ===== -->
+  <div class="screen work-screen" id="screen-work-dev">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">💻 코드웍스 IT</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">키보드 코딩 <small>1커밋 완성 시 ₩650</small></div>
+      <div class="code-box" id="dev-code">준비 중...</div>
+      <div class="hint">화면의 코드를 <b>키보드로 그대로 입력</b>하세요! (모바일은 코드를 탭하면 한 글자씩 입력)</div>
+      <div class="result-line" id="dev-result">&nbsp;</div>
+      <div class="stat-line">완성한 커밋 <b id="dev-count">0</b>개</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: 병원 (의사) ===== -->
+  <div class="screen work-screen" id="screen-work-doctor">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">🩺 서울 대학병원</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">정밀 진료 <small>1진료 완료 시 ₩1,300</small></div>
+      <div class="canvas-wrap">
+        <canvas id="doctor-canvas" width="360" height="320"></canvas>
+      </div>
+      <div class="hint">제한시간 안에 움직이는 <b>환부(◎)를 정확히 클릭</b>하세요! 빗맞으면 시간이 깎입니다.</div>
+      <div class="result-line" id="doctor-result">&nbsp;</div>
+      <div class="stat-line">오늘 진료 <b id="doctor-count">0</b>건</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: 신문 배달 ===== -->
+  <div class="screen work-screen" id="screen-work-paperboy">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">🗞 새벽 신문배달</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">신문 배달 <small>1구역 완료 시 ₩90</small></div>
+      <div class="canvas-wrap"><canvas id="paperboy-canvas" width="360" height="320"></canvas></div>
+      <div class="hint">제한시간 안에 나타나는 <b>우편함(📬)을 클릭</b>해 신문을 넣으세요!</div>
+      <div class="result-line" id="paperboy-result">&nbsp;</div>
+      <div class="stat-line">배달한 구역 <b id="paperboy-count">0</b>곳</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: 편의점 ===== -->
+  <div class="screen work-screen" id="screen-work-store">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">🏪 24시 편의점</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">바코드 스캔 <small>1손님 완료 시 ₩180</small></div>
+      <div class="canvas-wrap"><canvas id="store-canvas" width="360" height="300"></canvas></div>
+      <div class="hint">화면을 <b>빠르게 연타</b>해서 제한시간 안에 스캔 게이지를 가득 채우세요!</div>
+      <div class="result-line" id="store-result">&nbsp;</div>
+      <div class="stat-line">응대한 손님 <b id="store-count">0</b>명</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: 셰프 ===== -->
+  <div class="screen work-screen" id="screen-work-chef">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">🍳 비스트로 셰프</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">스테이크 굽기 <small>1접시 완성 시 ₩480</small></div>
+      <div class="canvas-wrap"><canvas id="chef-canvas" width="360" height="300"></canvas></div>
+      <div class="hint">움직이는 바늘이 <b>금색 존</b>에 올 때 클릭해서 3번 뒤집으세요! 빗나가면 실패.</div>
+      <div class="result-line" id="chef-result">&nbsp;</div>
+      <div class="stat-line">완성한 요리 <b id="chef-count">0</b>접시</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: 파일럿 ===== -->
+  <div class="screen work-screen" id="screen-work-pilot">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">✈️ 스카이 항공</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">정밀 착륙 <small>1회 착륙 성공 시 ₩950</small></div>
+      <div class="canvas-wrap"><canvas id="pilot-canvas" width="360" height="300"></canvas></div>
+      <div class="hint">고도 바늘이 좁은 <b>활주로 존</b>에 정확히 올 때 클릭! 한 번에 착륙시키세요.</div>
+      <div class="result-line" id="pilot-result">&nbsp;</div>
+      <div class="stat-line">무사 착륙 <b id="pilot-count">0</b>회</div>
+    </div>
+  </div>
+
+  <!-- ===== 일터: CEO ===== -->
+  <div class="screen work-screen" id="screen-work-ceo">
+    <div class="back-bar">
+      <button class="back-btn" data-go="workplace">←</button>
+      <span class="bar-title">👔 대기업 CEO</span>
+    </div>
+    <div class="card">
+      <div class="panel-title">중대 결정 <small>1건 처리 시 ₩1,800</small></div>
+      <div class="canvas-wrap"><canvas id="ceo-canvas" width="360" height="300"></canvas></div>
+      <div class="hint">불이 켜지는 <b>순서를 기억</b>했다가 그대로 클릭하세요! 결재 서류가 쌓여 있습니다.</div>
+      <div class="result-line" id="ceo-result">&nbsp;</div>
+      <div class="stat-line">처리한 안건 <b id="ceo-count">0</b>건</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CASINO
+       ============================================================ -->
+  <div class="screen" id="screen-casino">
+    <div class="back-bar">
+      <button class="back-btn" data-go="home">←</button>
+      <span class="bar-title">🎰 카지노</span>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="lotto"><span class="tab-ico">🎫</span>복권</button>
+      <button class="tab" data-tab="roulette"><span class="tab-ico">🎡</span>룰렛</button>
+      <button class="tab" data-tab="pinball"><span class="tab-ico">🎰</span>핀볼</button>
+      <button class="tab" data-tab="claw"><span class="tab-ico">🧸</span>뽑기</button>
+      <button class="tab" data-tab="slots"><span class="tab-ico">🍒</span>슬롯</button>
+      <button class="tab" data-tab="highlow"><span class="tab-ico">🃏</span>하이로우</button>
+      <button class="tab" data-tab="mines"><span class="tab-ico">💣</span>지뢰</button>
+      <button class="tab" data-tab="crash"><span class="tab-ico">🚀</span>크래시</button>
+      <button class="tab" data-tab="dice"><span class="tab-ico">🎲</span>주사위</button>
+      <button class="tab" data-tab="blackjack"><span class="tab-ico">🃝</span>블랙잭</button>
+      <button class="tab" data-tab="rps"><span class="tab-ico">✊</span>가위바위보</button>
+      <button class="tab" data-tab="ladder"><span class="tab-ico">🪜</span>사다리</button>
+      <button class="tab" data-tab="horse"><span class="tab-ico">🐎</span>경마</button>
+      <button class="tab" data-tab="timer"><span class="tab-ico">⏱</span>10초</button>
+    </nav>
+
+    <!-- 복권 -->
+    <section class="panel active" id="panel-lotto">
+      <div class="panel-title">GOLDEN LOTTO <small>같은 금액 3개면 당첨!</small></div>
+      <div class="prize-row">
+        <div class="prize-chip t150">₩150</div>
+        <div class="prize-chip t400">₩400</div>
+        <div class="prize-chip t1500">₩1,500</div>
+        <div class="prize-chip t10000">₩1만</div>
+        <div class="prize-chip t100000 jackpot">₩10만</div>
+      </div>
+      <div class="lotto-card" id="lotto-card">
+        <div class="lotto-card-head">
+          <span class="lotto-brand">★ GOLDEN TICKET ★</span>
+          <span class="lotto-no" id="lotto-no">NO. 000000</span>
+        </div>
+        <div class="lotto-grid" id="lotto-grid">
+          <div class="lotto-cell"></div>
+          <div class="lotto-cell"></div>
+          <div class="lotto-cell"></div>
+          <div class="lotto-cell"></div>
+          <div class="lotto-cell"></div>
+          <div class="lotto-cell"></div>
+          <canvas id="lotto-cover" width="360" height="240"></canvas>
+        </div>
+        <div class="lotto-card-foot">동전으로 긁듯이 드래그하세요</div>
+      </div>
+      <div class="row-2">
+        <button class="btn btn-gold btn-big" id="lotto-buy">🎫 복권 구입 — ₩100</button>
+        <button class="btn btn-big" id="lotto-reveal" disabled>한번에 긁기</button>
+      </div>
+      <div class="result-line" id="lotto-result">&nbsp;</div>
+      <div class="stat-line">구매 <b id="lotto-count">0</b>장 · 당첨 <b id="lotto-wins">0</b>회</div>
+    </section>
+
+    <!-- 룰렛 -->
+    <section class="panel" id="panel-roulette">
+      <div class="panel-title">LUCKY ROULETTE <small>적중 시 9배!</small></div>
+      <div class="canvas-wrap">
+        <canvas id="roulette-canvas" width="300" height="320"></canvas>
+      </div>
+      <div class="num-grid" id="num-grid"></div>
+      <div class="bet-box" id="roulette-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="roulette-spin">SPIN!</button>
+      <div class="result-line" id="roulette-result">1~10 중 숫자 하나를 고르세요</div>
+    </section>
+
+    <!-- 핀볼 -->
+    <section class="panel" id="panel-pinball">
+      <div class="panel-title">NEON PINBALL <small>구멍의 배수만큼 획득</small></div>
+      <div class="bet-select" id="pinball-bet">
+        <button class="btn bet-chip active" data-bet="100">₩100</button>
+        <button class="btn bet-chip" data-bet="500">₩500</button>
+        <button class="btn bet-chip" data-bet="1000">₩1,000</button>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="pinball-canvas" width="360" height="480"></canvas>
+      </div>
+      <div class="hint">보드를 <b>꾹 눌러</b> 파워를 모으고, 놓으면 발사! 발사대로 되돌아오면 환불됩니다.</div>
+      <div class="result-line" id="pinball-result">&nbsp;</div>
+    </section>
+
+    <!-- 인형뽑기 -->
+    <section class="panel" id="panel-claw">
+      <div class="panel-title">CLAW MASTER <small>타이밍이 생명! 1회 ₩400</small></div>
+      <div class="prize-row">
+        <div class="prize-chip">곰 ₩200</div>
+        <div class="prize-chip t1500">곰 ₩600</div>
+        <div class="prize-chip t10000">곰 ₩2,000</div>
+        <div class="prize-chip jackpot">황금곰 ₩8,000</div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="claw-canvas" width="360" height="420"></canvas>
+      </div>
+      <button class="btn btn-gold btn-big" id="claw-btn">🕹 잡기! — ₩400</button>
+      <div class="hint">집게가 좌우로 움직입니다. 원하는 인형 위에서 버튼을 누르세요!<br>비싼 인형일수록 집게에서 잘 <b>미끄러집니다</b>...</div>
+      <div class="result-line" id="claw-result">&nbsp;</div>
+    </section>
+
+    <!-- 슬롯머신 -->
+    <section class="panel" id="panel-slots">
+      <div class="panel-title">GOLD SLOTS <small>7️⃣ 세 개면 50배!</small></div>
+      <div class="slot-window">
+        <div class="slot-reel" id="reel-0">🍒</div>
+        <div class="slot-reel" id="reel-1">🍋</div>
+        <div class="slot-reel" id="reel-2">🔔</div>
+      </div>
+      <div class="bet-box" id="slots-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="slots-spin">SPIN</button>
+      <div class="result-line" id="slots-result">&nbsp;</div>
+      <div class="paytable-mini">7️⃣×3 <b>50배</b> · 💎×3 20배 · ⭐×3 10배 · 🔔×3 7배 · 🍋×3 5배 · 🍒×3 4배 · 🍒×2 2배</div>
+    </section>
+
+    <!-- 하이로우 -->
+    <section class="panel" id="panel-highlow">
+      <div class="panel-title">HIGH-LOW <small>연속으로 맞춰 판돈을 키워라</small></div>
+      <div class="hl-stage">
+        <div class="hl-card idle" id="hl-card">?</div>
+        <div class="hl-info">
+          <div><span>POT</span><b id="hl-pot">-</b></div>
+          <div><span>연속</span><b id="hl-streak">0</b></div>
+        </div>
+      </div>
+      <div class="row-3">
+        <button class="btn btn-big" id="hl-high" disabled>▲ HIGH</button>
+        <button class="btn btn-big" id="hl-low" disabled>▼ LOW</button>
+      </div>
+      <div class="bet-box" id="hl-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="hl-btn">게임 시작</button>
+      <div class="result-line" id="hl-result">맞출 때마다 판돈 ×1.3 — 같은 숫자가 나오면 패배!</div>
+    </section>
+
+    <!-- 지뢰 -->
+    <section class="panel" id="panel-mines">
+      <div class="panel-title">MINES <small>지뢰를 피해 보석을 캐라</small></div>
+      <div class="bet-select" id="mines-diff">
+        <button class="btn bet-chip active" data-bombs="3">지뢰 3개</button>
+        <button class="btn bet-chip" data-bombs="5">지뢰 5개</button>
+        <button class="btn bet-chip" data-bombs="10">지뢰 10개</button>
+      </div>
+      <div class="mines-grid" id="mines-grid"></div>
+      <div class="mines-info">배수 <b id="mines-mult">×1.00</b> · 예상 수령 <b id="mines-pot">-</b></div>
+      <div class="bet-box" id="mines-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="mines-btn">게임 시작</button>
+      <div class="result-line" id="mines-result">&nbsp;</div>
+    </section>
+
+    <!-- 크래시 -->
+    <section class="panel" id="panel-crash">
+      <div class="panel-title">ROCKET CRASH <small>터지기 전에 탈출하라!</small></div>
+      <div class="canvas-wrap">
+        <canvas id="crash-canvas" width="360" height="250"></canvas>
+      </div>
+      <div class="bet-box" id="crash-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="crash-btn">🚀 발사!</button>
+      <div class="result-line" id="crash-result">배수가 계속 올라갑니다. 욕심은 화를 부른다...</div>
+    </section>
+
+    <!-- 주사위 -->
+    <section class="panel" id="panel-dice">
+      <div class="panel-title">LUCKY DICE <small>확률을 직접 설계하라</small></div>
+      <div class="dice-display" id="dice-roll">??.??</div>
+      <input type="range" class="dice-slider" id="dice-slider" min="4" max="96" value="50">
+      <div class="dice-info">
+        <div><span>목표</span><b id="dice-target">50.00 미만</b></div>
+        <div><span>승률</span><b id="dice-chance">50%</b></div>
+        <div><span>배당</span><b id="dice-mult">×1.94</b></div>
+      </div>
+      <div class="bet-box" id="dice-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="dice-btn">ROLL!</button>
+      <div class="result-line" id="dice-result">슬라이더로 목표를 정하세요. 낮을수록 배당이 커집니다!</div>
+    </section>
+
+    <!-- 블랙잭 -->
+    <section class="panel" id="panel-blackjack">
+      <div class="panel-title">BLACKJACK <small>21에 가까우면 승리 · 블랙잭 1.5배</small></div>
+      <div class="bj-table">
+        <div class="bj-side">
+          <div class="bj-label">딜러 <b id="bj-dealer-score"></b></div>
+          <div class="bj-cards" id="bj-dealer"></div>
+        </div>
+        <div class="bj-side">
+          <div class="bj-label">나 <b id="bj-player-score"></b></div>
+          <div class="bj-cards" id="bj-player"></div>
+        </div>
+      </div>
+      <div class="bet-box" id="bj-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <div class="row-3">
+        <button class="btn btn-big" id="bj-hit" disabled>HIT</button>
+        <button class="btn btn-big" id="bj-stand" disabled>STAND</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="bj-deal">딜 — 카드 받기</button>
+      <div class="result-line" id="bj-result">베팅 후 딜 버튼을 누르세요</div>
+    </section>
+
+    <!-- 가위바위보 -->
+    <section class="panel" id="panel-rps">
+      <div class="panel-title">ROCK·PAPER·SCISSORS <small>승리 ×1.9 · 비기면 환불</small></div>
+      <div class="rps-stage">
+        <div class="rps-hand" id="rps-me">❔</div>
+        <div class="rps-vs">VS</div>
+        <div class="rps-hand" id="rps-cpu">❔</div>
+      </div>
+      <div class="bet-box" id="rps-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <div class="rps-pick">
+        <button class="btn rps-btn" data-rps="0">✊<span>바위</span></button>
+        <button class="btn rps-btn" data-rps="1">✋<span>보</span></button>
+        <button class="btn rps-btn" data-rps="2">✌<span>가위</span></button>
+      </div>
+      <div class="result-line" id="rps-result">가위바위보 중 하나를 내세요!</div>
+    </section>
+
+    <!-- 사다리타기 -->
+    <section class="panel" id="panel-ladder">
+      <div class="panel-title">LADDER GAME <small>사다리를 타고 배수에 도착</small></div>
+      <div class="canvas-wrap"><canvas id="ladder-canvas" width="320" height="360"></canvas></div>
+      <div class="bet-box" id="ladder-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <div class="ladder-starts" id="ladder-starts">
+        <button class="btn ladder-start" data-col="0">A 출발</button>
+        <button class="btn ladder-start" data-col="1">B 출발</button>
+        <button class="btn ladder-start" data-col="2">C 출발</button>
+        <button class="btn ladder-start" data-col="3">D 출발</button>
+      </div>
+      <div class="result-line" id="ladder-result">베팅 후 출발 칸을 고르세요</div>
+    </section>
+
+    <!-- 경마 -->
+    <section class="panel" id="panel-horse">
+      <div class="panel-title">HORSE RACE <small>우승마 적중 ×3.8</small></div>
+      <div class="canvas-wrap"><canvas id="horse-canvas" width="360" height="260"></canvas></div>
+      <div class="horse-pick" id="horse-pick">
+        <button class="btn horse-btn" data-horse="0">1번 🔴</button>
+        <button class="btn horse-btn" data-horse="1">2번 🔵</button>
+        <button class="btn horse-btn" data-horse="2">3번 🟢</button>
+        <button class="btn horse-btn" data-horse="3">4번 🟡</button>
+      </div>
+      <div class="bet-box" id="horse-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="horse-start">🏁 출발!</button>
+      <div class="result-line" id="horse-result">우승할 말을 고르세요</div>
+    </section>
+
+    <!-- 10초 -->
+    <section class="panel" id="panel-timer">
+      <div class="panel-title">PERFECT 10 <small>감으로 10.00초!</small></div>
+      <div class="timer-display" id="timer-display">0.00</div>
+      <div class="bet-box" id="timer-bet">
+        <input type="number" class="bet-input" value="100" min="10" step="10">
+        <button class="btn btn-small" data-act="add" data-v="100">+100</button>
+        <button class="btn btn-small" data-act="add" data-v="1000">+1K</button>
+        <button class="btn btn-small" data-act="half">절반</button>
+        <button class="btn btn-small" data-act="allin">올인</button>
+      </div>
+      <button class="btn btn-gold btn-big" id="timer-btn">START</button>
+      <div class="result-line" id="timer-result">3초 후엔 시간이 가려집니다. 감으로 10.00초에 멈추세요!</div>
+      <table class="pay-table">
+        <tr><th>오차</th><th>배당</th></tr>
+        <tr><td>±0.01초</td><td class="gold">10배</td></tr>
+        <tr><td>±0.05초</td><td>4배</td></tr>
+        <tr><td>±0.15초</td><td>2배</td></tr>
+        <tr><td>±0.50초</td><td>1배 (본전)</td></tr>
+        <tr><td>그 이상</td><td class="red">꽝</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <footer class="footer">WON RUSH — 땀 흘려 벌거나, 운에 맡기거나.</footer>
+</div>
+
+<!-- 화면 플래시 -->
+<div class="screen-flash" id="screen-flash"></div>
+
+<!-- BIG WIN -->
+<div class="bigwin" id="bigwin">
+  <div class="bigwin-rays" id="bigwin-rays"></div>
+  <div class="bigwin-inner">
+    <div class="bigwin-title" id="bigwin-title">BIG WIN!</div>
+    <div class="bigwin-amount" id="bigwin-amount">+₩10,000</div>
+  </div>
+</div>
+
+<!-- 입사시험 모달 -->
+<div class="modal-overlay" id="exam-modal">
+  <div class="modal">
+    <div class="exam-title" id="exam-title">입사시험</div>
+    <div class="exam-sub" id="exam-sub">난이도 ★☆☆☆☆</div>
+    <div class="exam-body" id="exam-body"></div>
+    <div class="exam-foot">
+      <button class="btn" id="exam-cancel">취소</button>
+      <button class="btn btn-gold" id="exam-submit">제출</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<script src="game.js"></script>
+</body>
+</html>

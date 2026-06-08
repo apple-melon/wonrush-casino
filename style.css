@@ -1,0 +1,853 @@
+/* ============================================================
+   WON RUSH CASINO — 디자인 시스템
+   컨셉: 한밤의 럭셔리 카지노. 딥블랙 벨벳 + 골드 + 네온 글로우.
+   모든 요소가 같은 곡률(14px), 같은 골드 톤, 같은 글로우를 공유.
+   ============================================================ */
+:root {
+  --bg: #0b0810;
+  --panel: rgba(26, 20, 34, 0.92);
+  --panel2: #241b30;
+  --line: rgba(255, 214, 110, 0.18);
+  --line-strong: rgba(255, 214, 110, 0.45);
+  --text: #f2ecf7;
+  --dim: #9d92ad;
+  --gold: #ffd866;
+  --gold-deep: #c89b2c;
+  --green: #5ef0a0;
+  --red: #ff5d7a;
+  --cyan: #5ad0e6;
+  --r: 14px;
+  --glow-gold: 0 0 18px rgba(255, 216, 102, 0.35);
+  --grad-gold: linear-gradient(180deg, #ffe89a 0%, #ffd866 38%, #e0a93c 70%, #c8922a 100%);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  padding: 18px 10px 50px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 무드 조명 */
+.bg-spot {
+  position: fixed; border-radius: 50%;
+  filter: blur(110px); pointer-events: none; z-index: 0;
+  animation: drift 14s ease-in-out infinite alternate;
+}
+.spot-a { width: 480px; height: 480px; top: -140px; left: -120px; background: rgba(146, 60, 188, 0.20); }
+.spot-b { width: 520px; height: 520px; bottom: -180px; right: -140px; background: rgba(214, 158, 24, 0.13); animation-delay: -7s; }
+@keyframes drift { to { transform: translate(40px, 30px) scale(1.12); } }
+
+#fx-canvas {
+  position: fixed; inset: 0; width: 100vw; height: 100vh;
+  pointer-events: none; z-index: 90;
+}
+
+.game { max-width: 620px; margin: 0 auto; position: relative; z-index: 1; }
+.game.shake { animation: shake 0.45s; }
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-7px, 3px); }
+  30% { transform: translate(6px, -4px); }
+  45% { transform: translate(-5px, -3px); }
+  60% { transform: translate(4px, 3px); }
+  75% { transform: translate(-2px, 1px); }
+}
+
+/* ===== 헤더 ===== */
+.header {
+  display: flex; align-items: center; gap: 16px;
+  background: linear-gradient(180deg, rgba(40, 30, 52, .95), rgba(22, 16, 30, .95));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  box-shadow: var(--glow-gold), inset 0 1px 0 rgba(255,255,255,.06);
+  padding: 14px 20px;
+  margin-bottom: 14px;
+}
+.logo-main {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px; letter-spacing: 3px; line-height: 1;
+  background: var(--grad-gold);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 216, 102, .45));
+}
+.logo-sub { font-size: 10px; letter-spacing: 6px; color: var(--dim); text-align: center; margin-top: 2px; }
+.money-box { flex: 1; text-align: right; }
+.money-label { display: block; font-size: 10px; letter-spacing: 3px; color: var(--dim); }
+.money {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px; line-height: 1; letter-spacing: 1px;
+  background: var(--grad-gold);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  transition: transform .15s;
+}
+.money.pop { animation: money-pop .5s cubic-bezier(.2, 2.2, .4, 1); }
+@keyframes money-pop { 30% { transform: scale(1.22); } }
+.money.down { animation: money-down .4s; }
+@keyframes money-down {
+  30% { transform: scale(0.92); filter: drop-shadow(0 0 8px rgba(255, 93, 122, .8)); }
+}
+.header-btns { display: flex; gap: 8px; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--panel2); color: var(--dim);
+  border: 1px solid var(--line); cursor: pointer;
+  font-size: 16px; transition: all .2s;
+}
+.icon-btn:hover { color: var(--gold); border-color: var(--line-strong); box-shadow: var(--glow-gold); }
+
+/* ===== 탭 ===== */
+.tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; margin-bottom: 14px; }
+@media (max-width: 520px) { .tabs { grid-template-columns: repeat(4, 1fr); } }
+.tab {
+  font-family: inherit; font-size: 12.5px; font-weight: 700;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: var(--panel); color: var(--dim);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 10px 4px; cursor: pointer;
+  transition: all .22s;
+}
+.tab-ico { font-size: 18px; filter: grayscale(1) opacity(.6); transition: filter .22s; }
+.tab:hover { color: var(--text); transform: translateY(-2px); }
+.tab.active {
+  background: var(--grad-gold); color: #2b1d00;
+  border-color: #ffe89a;
+  box-shadow: 0 4px 22px rgba(255, 200, 60, .35);
+  transform: translateY(-2px);
+}
+.tab.active .tab-ico { filter: none; }
+
+/* ===== 패널 ===== */
+.panel {
+  display: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 4px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255,255,255,.05);
+  padding: 24px 22px;
+  backdrop-filter: blur(6px);
+}
+.panel.active { display: block; animation: panel-in .35s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+}
+.panel-title {
+  font-family: 'Bebas Neue', 'Noto Sans KR', sans-serif;
+  font-size: 26px; letter-spacing: 3px;
+  text-align: center; margin-bottom: 16px;
+  background: var(--grad-gold);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.panel-title small {
+  display: block;
+  font-family: 'Noto Sans KR'; font-size: 12px; font-weight: 500;
+  letter-spacing: 1px; -webkit-text-fill-color: var(--dim);
+}
+
+.canvas-wrap { text-align: center; position: relative; }
+canvas {
+  border-radius: var(--r);
+  max-width: 100%;
+  touch-action: none;
+}
+#labor-canvas, #pinball-canvas, #roulette-canvas {
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  background: #0e0b16;
+}
+
+.hint { font-size: 12.5px; color: var(--dim); text-align: center; margin-top: 12px; line-height: 1.8; }
+.hint b { color: var(--gold); }
+.stat-line { font-size: 12px; color: var(--dim); text-align: center; margin-top: 10px; }
+.stat-line b { color: var(--text); }
+.result-line { font-size: 15px; font-weight: 700; text-align: center; margin-top: 12px; min-height: 22px; transition: all .2s; }
+.result-line.win { color: var(--green); animation: result-bounce .5s cubic-bezier(.2, 2.4, .4, 1); text-shadow: 0 0 14px rgba(94, 240, 160, .6); }
+.result-line.lose { color: var(--red); animation: result-bounce .4s; }
+@keyframes result-bounce { 0% { transform: scale(.6); opacity: 0; } }
+
+/* ===== 버튼 ===== */
+.btn {
+  position: relative; overflow: hidden;
+  font-family: inherit; font-size: 15px; font-weight: 700;
+  color: var(--text);
+  background: linear-gradient(180deg, #322642, #221a2e);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all .18s;
+}
+.btn:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+.btn:active { transform: translateY(1px) scale(.97); }
+.btn:disabled { opacity: .35; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-gold {
+  background: var(--grad-gold);
+  color: #2b1d00; border-color: #ffe89a;
+  box-shadow: 0 4px 20px rgba(255, 200, 60, .3);
+}
+.btn-gold:hover { box-shadow: 0 6px 30px rgba(255, 200, 60, .55); border-color: #fff3c2; }
+/* 골드 버튼 샤인 스윕 */
+.btn-gold::after {
+  content: '';
+  position: absolute; top: 0; left: -80%;
+  width: 50%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+  transform: skewX(-20deg);
+  animation: shine 3.2s ease-in-out infinite;
+}
+@keyframes shine { 0%, 60% { left: -80%; } 100% { left: 140%; } }
+.btn-small { font-size: 12.5px; padding: 8px 12px; border-radius: 10px; }
+.btn-big {
+  display: block; width: 100%;
+  font-size: 17px; letter-spacing: 1px;
+  padding: 15px; margin: 14px 0 0;
+}
+.row-2 { display: flex; gap: 10px; }
+.row-2 .btn-big { flex: 1.6; }
+.row-2 .btn-big:last-child { flex: 1; }
+
+/* ===== 노동 ===== */
+.job-tabs { display: flex; gap: 10px; margin-bottom: 14px; }
+.job-tab { flex: 1; }
+.job-tab em { font-style: normal; color: var(--green); font-size: 12.5px; margin-left: 4px; }
+.job-tab.active { border-color: var(--gold); box-shadow: var(--glow-gold); background: linear-gradient(180deg, #3d2f52, #2a2038); }
+
+.progress-bar {
+  height: 14px; margin-top: 14px;
+  background: #15101e;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #c8922a, #ffd866, #fff3c2, #ffd866);
+  background-size: 200% 100%;
+  animation: flow 1.6s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 216, 102, .6);
+  transition: width .18s;
+}
+@keyframes flow { to { background-position: -200% 0; } }
+
+/* ===== 복권 ===== */
+.prize-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.prize-chip {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px; letter-spacing: 1px;
+  padding: 6px 14px; border-radius: 99px;
+  border: 1px dashed var(--line-strong);
+  color: var(--dim);
+}
+.prize-chip.t1500 { color: var(--cyan); border-color: rgba(90, 208, 230, .4); }
+.prize-chip.t10000 { color: #c792ff; border-color: rgba(199, 146, 255, .4); }
+.prize-chip.jackpot {
+  color: #2b1d00; background: var(--grad-gold); border: none;
+  box-shadow: var(--glow-gold);
+  animation: jackpot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes jackpot-pulse { 50% { box-shadow: 0 0 28px rgba(255, 216, 102, .75); transform: scale(1.06); } }
+
+.lotto-card {
+  max-width: 420px; margin: 0 auto;
+  background: linear-gradient(160deg, #2e2316 0%, #1f1810 55%, #2a2012 100%);
+  border: 2px solid var(--gold-deep);
+  border-radius: calc(var(--r) + 2px);
+  box-shadow: 0 14px 40px rgba(0,0,0,.6), inset 0 0 40px rgba(255, 216, 102, .06);
+  overflow: hidden;
+  transition: transform .25s, box-shadow .25s;
+}
+.lotto-card.celebrate { animation: card-pop .6s cubic-bezier(.2, 2, .4, 1); box-shadow: 0 0 50px rgba(255, 216, 102, .5); }
+@keyframes card-pop { 30% { transform: scale(1.04) rotate(.5deg); } 60% { transform: scale(.99); } }
+.lotto-card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px;
+  background: var(--grad-gold);
+}
+.lotto-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: #2b1d00; }
+.lotto-no { font-size: 10px; font-weight: 700; color: rgba(43, 29, 0, .65); letter-spacing: 1px; }
+.lotto-card-foot { text-align: center; font-size: 11px; color: rgba(255, 216, 102, .5); padding: 9px; letter-spacing: 1px; }
+
+.lotto-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 14px;
+  aspect-ratio: 3 / 2;
+}
+.lotto-cell {
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(18px, 6vw, 28px); letter-spacing: 1px;
+  background: #14101c;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--dim);
+  transition: all .25s;
+}
+.lotto-cell.t150, .lotto-cell.t400 { color: #d9d2e4; }
+.lotto-cell.t1500 { color: var(--cyan); }
+.lotto-cell.t10000 { color: #c792ff; }
+.lotto-cell.t100000 { color: var(--gold); }
+.lotto-cell.win {
+  color: #2b1d00; background: var(--grad-gold);
+  border-color: #fff3c2;
+  animation: cell-win .7s cubic-bezier(.2, 2.4, .4, 1) infinite alternate;
+  box-shadow: 0 0 20px rgba(255, 216, 102, .8);
+}
+@keyframes cell-win { from { transform: scale(1); } to { transform: scale(1.08); } }
+.lotto-cell.dead { opacity: .35; }
+
+#lotto-cover {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border-radius: 0;
+  cursor: crosshair;
+}
+
+/* ===== 룰렛 ===== */
+.num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 16px 0 4px; }
+.num-btn {
+  font-family: 'Bebas Neue', sans-serif; font-size: 19px;
+  aspect-ratio: 1; border-radius: 50%;
+  background: linear-gradient(180deg, #322642, #1d1628);
+  color: var(--text);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: all .18s;
+}
+.num-btn:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+.num-btn.active {
+  background: radial-gradient(circle at 35% 30%, #ff8298, #d4203a 70%);
+  border-color: #ffb3c0;
+  box-shadow: 0 0 18px rgba(255, 70, 100, .65);
+  transform: scale(1.1);
+}
+
+/* ===== 베팅 ===== */
+.bet-box { display: flex; gap: 8px; align-items: stretch; margin: 12px 0 0; flex-wrap: wrap; justify-content: center; }
+.bet-input {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px;
+  width: 140px; padding: 8px 12px;
+  background: #14101c; color: var(--gold);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-align: right;
+}
+.bet-input:focus { outline: none; border-color: var(--gold); box-shadow: var(--glow-gold); }
+
+.bet-select { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
+.bet-chip {
+  border-radius: 99px;
+  border: 2px dashed var(--line);
+  font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; font-size: 16px;
+}
+.bet-chip.active {
+  background: var(--grad-gold); color: #2b1d00;
+  border: 2px solid #fff3c2;
+  box-shadow: var(--glow-gold);
+}
+
+/* ===== 10초 ===== */
+.timer-display {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 76px; line-height: 1;
+  text-align: center;
+  color: var(--cyan);
+  text-shadow: 0 0 24px rgba(90, 208, 230, .65);
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(90, 208, 230, .12), transparent 60%),
+    #0e0b16;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 26px 0 18px;
+  letter-spacing: 6px;
+}
+.timer-display.hidden-time { color: #463d56; text-shadow: none; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .55; } }
+.pay-table {
+  width: 100%; margin-top: 16px;
+  border-collapse: collapse; font-size: 12.5px;
+}
+.pay-table th, .pay-table td {
+  border: 1px solid var(--line);
+  padding: 8px; text-align: center; color: var(--dim);
+}
+.pay-table th { background: rgba(255, 216, 102, .08); color: var(--text); letter-spacing: 1px; }
+.pay-table .gold { color: var(--gold); font-weight: 700; }
+.pay-table .red { color: var(--red); }
+
+/* ===== BIG WIN ===== */
+.bigwin {
+  position: fixed; inset: 0; z-index: 95;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle, rgba(50, 30, 0, .55), rgba(0, 0, 0, .82));
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+}
+.bigwin.show { opacity: 1; }
+.bigwin-inner { text-align: center; }
+.bigwin-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(64px, 16vw, 120px); letter-spacing: 6px; line-height: 1;
+  background: linear-gradient(180deg, #fff7d6, #ffd866 40%, #e0890c 75%, #ffd866);
+  background-size: 100% 200%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 30px rgba(255, 200, 60, .8));
+  animation: bigwin-gleam 1.2s linear infinite;
+}
+.bigwin.show .bigwin-title { animation: bigwin-in .55s cubic-bezier(.2, 2.2, .4, 1), bigwin-gleam 1.2s linear infinite; }
+@keyframes bigwin-in { 0% { transform: scale(.2) rotate(-6deg); } }
+@keyframes bigwin-gleam { to { background-position: 0 -200%; } }
+.bigwin-amount {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(34px, 8vw, 54px); letter-spacing: 3px;
+  color: #fff; text-shadow: 0 0 24px rgba(255, 255, 255, .7);
+  margin-top: 8px;
+}
+.bigwin.show .bigwin-amount { animation: bigwin-in .55s .12s cubic-bezier(.2, 2.2, .4, 1) backwards; }
+
+/* ===== 토스트 ===== */
+.toasts {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 99;
+  pointer-events: none;
+}
+.toast {
+  font-size: 14.5px; font-weight: 700;
+  background: rgba(20, 14, 28, .94);
+  border: 1px solid var(--line-strong);
+  border-radius: 99px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6), var(--glow-gold);
+  padding: 11px 26px;
+  color: var(--gold);
+  animation: toast-in 2.2s cubic-bezier(.2, 1, .4, 1) forwards;
+  text-align: center;
+}
+.toast.bad { border-color: rgba(255, 93, 122, .5); color: var(--red); box-shadow: 0 10px 30px rgba(0,0,0,.6), 0 0 18px rgba(255, 93, 122, .3); }
+.toast.good { border-color: rgba(94, 240, 160, .5); color: var(--green); box-shadow: 0 10px 30px rgba(0,0,0,.6), 0 0 18px rgba(94, 240, 160, .3); }
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(20px) scale(.85); }
+  12% { opacity: 1; transform: translateY(0) scale(1); }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+
+.footer { text-align: center; font-size: 11px; color: var(--dim); margin-top: 20px; letter-spacing: 1px; opacity: .7; }
+
+/* ===== 슬롯머신 ===== */
+.slot-window {
+  display: flex; gap: 12px; justify-content: center;
+  background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(255,216,102,.05), rgba(0,0,0,.45));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  padding: 22px;
+  box-shadow: inset 0 6px 24px rgba(0,0,0,.6), var(--glow-gold);
+}
+.slot-reel {
+  width: 92px; height: 104px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 56px;
+  background: linear-gradient(180deg, #181226, #2c2240 50%, #181226);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: inset 0 0 18px rgba(0,0,0,.7);
+  transition: border-color .2s;
+}
+.slot-reel.spin { filter: blur(3px); }
+.slot-reel.hit {
+  border-color: #fff3c2;
+  box-shadow: 0 0 24px rgba(255, 216, 102, .8);
+  animation: reel-pop .45s cubic-bezier(.2, 2.4, .4, 1);
+}
+@keyframes reel-pop { 30% { transform: scale(1.14); } }
+.paytable-mini { font-size: 11.5px; color: var(--dim); text-align: center; margin-top: 12px; line-height: 1.9; }
+.paytable-mini b { color: var(--gold); }
+
+/* ===== 하이로우 ===== */
+.hl-stage { display: flex; align-items: center; justify-content: center; gap: 30px; margin: 8px 0 16px; }
+.hl-card {
+  width: 112px; height: 152px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 46px; letter-spacing: 1px;
+  color: #1a1426;
+  background: linear-gradient(155deg, #ffffff, #dfe3ee);
+  border-radius: 12px;
+  box-shadow: 0 12px 34px rgba(0,0,0,.55), inset 0 0 0 5px rgba(20,16,28,.08);
+}
+.hl-card.idle {
+  background: repeating-linear-gradient(45deg, #241b30 0 10px, #2e2240 10px 20px);
+  color: var(--gold);
+  border: 1px solid var(--line-strong);
+}
+.hl-card.red { color: #d4203a; }
+.hl-card.flip { animation: hl-flip .4s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes hl-flip { 0% { transform: rotateY(90deg) scale(.9); } }
+.hl-info { display: flex; flex-direction: column; gap: 14px; }
+.hl-info span { display: block; font-size: 10px; letter-spacing: 2px; color: var(--dim); }
+.hl-info b { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--gold); }
+.row-3 { display: flex; gap: 10px; }
+.row-3 .btn-big { flex: 1; margin-top: 0; }
+
+/* ===== 지뢰 ===== */
+.mines-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px;
+  max-width: 330px; margin: 0 auto;
+}
+.mine-tile {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: transparent;
+  background: linear-gradient(180deg, #322642, #221a2e);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.mine-tile:hover:not(:disabled):not(.safe):not(.boom) { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.mine-tile:disabled { cursor: default; }
+.mine-tile.safe {
+  color: inherit;
+  background: linear-gradient(180deg, rgba(94,240,160,.3), rgba(94,240,160,.08));
+  border-color: rgba(94,240,160,.55);
+  animation: tile-pop .35s cubic-bezier(.2, 2.4, .4, 1);
+}
+@keyframes tile-pop { 0% { transform: scale(.4); } }
+.mine-tile.boom {
+  color: inherit;
+  background: radial-gradient(circle, #ff8298, #b3142c);
+  border-color: #ffb3c0;
+  box-shadow: 0 0 22px rgba(255, 70, 100, .8);
+  animation: tile-shake .45s;
+}
+@keyframes tile-shake {
+  20% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-3px, -2px); }
+  80% { transform: translate(3px, 2px); }
+}
+.mine-tile.reveal-bomb { color: inherit; background: rgba(255, 93, 122, .14); border-color: rgba(255, 93, 122, .4); opacity: .85; }
+.mines-info { text-align: center; font-size: 13px; color: var(--dim); margin-top: 14px; }
+.mines-info b { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: var(--gold); letter-spacing: 1px; }
+
+/* ===== 주사위 ===== */
+.dice-display {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px; line-height: 1; letter-spacing: 4px;
+  text-align: center;
+  color: var(--gold);
+  text-shadow: 0 0 22px rgba(255, 216, 102, .55);
+  background: radial-gradient(ellipse at 50% 130%, rgba(255, 216, 102, .1), transparent 60%), #0e0b16;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 24px 0 16px;
+  margin-bottom: 16px;
+}
+.dice-display.rolling { color: var(--dim); text-shadow: none; }
+.dice-display.win-flash { color: var(--green); text-shadow: 0 0 26px rgba(94, 240, 160, .8); }
+.dice-display.lose-flash { color: var(--red); text-shadow: 0 0 26px rgba(255, 93, 122, .7); }
+.dice-slider {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 10px;
+  background: linear-gradient(90deg, var(--green), var(--gold), var(--red));
+  border-radius: 99px;
+  outline: none;
+  cursor: pointer;
+}
+.dice-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--grad-gold);
+  border: 2px solid #fff3c2;
+  box-shadow: var(--glow-gold);
+  cursor: grab;
+}
+.dice-info { display: flex; justify-content: center; gap: 34px; margin-top: 14px; }
+.dice-info span { display: block; font-size: 10px; letter-spacing: 2px; color: var(--dim); text-align: center; }
+.dice-info b { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--text); letter-spacing: 1px; }
+.dice-info div:last-child b { color: var(--gold); }
+
+/* ===== 크래시/뽑기/일터 캔버스 ===== */
+#crash-canvas, #claw-canvas, #barista-canvas, #courier-canvas, #doctor-canvas {
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  background: #0e0b16;
+}
+
+/* ============================================================
+   화면 전환 (홈 / 직장 / 일터 / 카지노)
+   ============================================================ */
+.screen { display: none; }
+.screen.active { display: block; animation: panel-in .35s cubic-bezier(.2, 1.4, .4, 1); }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 4px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255,255,255,.05);
+  padding: 24px 22px;
+  backdrop-filter: blur(6px);
+}
+
+/* ===== 홈 ===== */
+.home-tagline { text-align: center; font-size: 17px; color: var(--dim); margin: 24px 0 26px; letter-spacing: 1px; }
+.home-cards { display: grid; gap: 16px; }
+@media (min-width: 520px) { .home-cards { grid-template-columns: 1fr 1fr; } }
+.home-card {
+  cursor: pointer; text-align: center;
+  padding: 42px 22px 32px;
+  border-radius: calc(var(--r) + 8px);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  position: relative; overflow: hidden;
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+.home-card:hover { transform: translateY(-5px); border-color: #ffe89a; box-shadow: 0 18px 44px rgba(0,0,0,.55); }
+.hc-work { background: linear-gradient(160deg, rgba(90,208,230,.16), rgba(28,20,40,.94)); }
+.hc-casino { background: linear-gradient(160deg, rgba(255,93,122,.18), rgba(28,20,40,.94)); }
+.hc-icon { font-size: 64px; line-height: 1; filter: drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
+.hc-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 38px; letter-spacing: 4px; margin-top: 10px;
+  background: var(--grad-gold);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hc-desc { font-size: 13.5px; color: var(--text); opacity: .85; margin-top: 8px; line-height: 1.6; }
+.hc-tag { font-size: 11px; color: var(--dim); margin-top: 14px; letter-spacing: 1px; }
+
+/* ===== 뒤로가기 바 ===== */
+.back-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.back-btn {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--panel2); color: var(--gold);
+  border: 1px solid var(--line); cursor: pointer;
+  font-size: 20px; transition: all .2s;
+}
+.back-btn:hover { border-color: var(--line-strong); box-shadow: var(--glow-gold); transform: translateX(-2px); }
+.bar-title { font-family: 'Bebas Neue', 'Noto Sans KR', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--text); }
+.board-note { font-size: 13px; color: var(--dim); text-align: center; margin-bottom: 16px; }
+.board-note b { color: var(--gold); }
+
+/* ===== 구인 게시판 ===== */
+.job-list { display: grid; gap: 12px; }
+.job-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(40,30,52,.7), rgba(22,16,30,.7));
+  cursor: pointer; transition: all .2s;
+}
+.job-card:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: 0 8px 22px rgba(0,0,0,.45); }
+.job-card.hired { border-color: rgba(94,240,160,.4); }
+.jc-icon { font-size: 38px; flex-shrink: 0; width: 46px; text-align: center; }
+.jc-main { flex: 1; text-align: left; min-width: 0; }
+.jc-name { font-size: 16px; font-weight: 700; }
+.jc-field { font-size: 10.5px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px; margin-left: 6px; vertical-align: middle; }
+.jc-desc { font-size: 12px; color: var(--dim); margin-top: 4px; }
+.jc-pay { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: var(--gold); margin-top: 6px; letter-spacing: 1px; }
+.jc-action { flex-shrink: 0; text-align: right; }
+.jc-go { color: var(--green); font-weight: 700; font-size: 13px; white-space: nowrap; }
+.jc-lock { color: var(--dim); font-size: 11.5px; display: block; white-space: nowrap; }
+.jc-stars { color: var(--gold); letter-spacing: 1px; }
+
+/* ===== 입사시험 모달 ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 96;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(5, 3, 10, .8);
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal {
+  width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--r) + 4px);
+  box-shadow: 0 24px 60px rgba(0,0,0,.7), var(--glow-gold);
+  padding: 26px 24px;
+}
+.modal-overlay.show .modal { animation: panel-in .35s cubic-bezier(.2, 1.4, .4, 1); }
+.exam-title {
+  font-family: 'Bebas Neue', 'Noto Sans KR', sans-serif;
+  font-size: 24px; letter-spacing: 2px; text-align: center;
+  background: var(--grad-gold);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.exam-sub { text-align: center; font-size: 12px; color: var(--dim); margin: 5px 0 18px; letter-spacing: 1px; }
+.exam-q { margin-bottom: 18px; }
+.eq-prompt { font-size: 16px; margin-bottom: 9px; }
+.eq-prompt b { color: var(--gold); }
+.eq-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.eq-opt {
+  font-family: inherit; font-size: 16px;
+  padding: 11px; border-radius: 10px;
+  background: var(--panel2); color: var(--text);
+  border: 1px solid var(--line); cursor: pointer; transition: all .15s;
+}
+.eq-opt:hover { border-color: var(--line-strong); }
+.eq-opt.sel { background: var(--grad-gold); color: #2b1d00; border-color: #fff3c2; font-weight: 700; }
+.exam-foot { display: flex; gap: 10px; margin-top: 6px; }
+.exam-foot .btn { flex: 1; }
+
+/* ===== IT 코딩 (타이핑) ===== */
+.code-box {
+  font-family: 'Courier New', monospace;
+  font-size: 24px; line-height: 1.9;
+  background: #0e0b16;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 28px 22px; min-height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; cursor: pointer; user-select: none;
+  letter-spacing: 1px; word-break: break-all;
+}
+.code-box .done { color: var(--green); }
+.code-box .cur { background: var(--gold); color: #2b1d00; border-radius: 4px; padding: 0 3px; animation: cur-blink .8s steps(2) infinite; }
+@keyframes cur-blink { 50% { opacity: .55; } }
+.code-box .todo { color: var(--dim); }
+.code-box .sp { display: inline-block; min-width: .55em; }
+.code-box.err { animation: tile-shake .2s; }
+
+/* ============================================================
+   부자 랭킹
+   ============================================================ */
+.rank-badge {
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 1px;
+  background: var(--panel2); color: var(--gold);
+  border: 1px solid var(--line); border-radius: 99px;
+  padding: 6px 12px; cursor: pointer; transition: all .2s;
+}
+.rank-badge:hover { border-color: var(--line-strong); box-shadow: var(--glow-gold); }
+.rank-badge.up { animation: rank-up .6s; }
+@keyframes rank-up { 30% { transform: scale(1.25); color: #fff; } }
+
+.home-rank {
+  width: 100%; margin-top: 16px;
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  background: linear-gradient(180deg, rgba(255,216,102,.14), rgba(28,20,40,.8));
+  border: 1px solid var(--line-strong); border-radius: var(--r);
+  color: var(--gold); padding: 14px; cursor: pointer; transition: all .2s;
+}
+.home-rank:hover { transform: translateY(-2px); box-shadow: var(--glow-gold); }
+.home-rank b { color: #fff; font-size: 16px; }
+
+.rank-note { font-size: 13px; color: var(--dim); text-align: center; margin-bottom: 14px; }
+.rank-list { display: flex; flex-direction: column; gap: 8px; }
+.rank-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  transition: background .3s;
+}
+.rank-row.me { border-color: var(--gold); background: linear-gradient(90deg, rgba(255,216,102,.14), rgba(28,20,40,.7)); box-shadow: var(--glow-gold); }
+.rank-row.top1 { border-color: #ffd866; }
+.rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--dim); width: 38px; text-align: center; flex-shrink: 0; }
+.rank-row.top1 .rank-pos, .rank-row.top2 .rank-pos, .rank-row.top3 .rank-pos { font-size: 24px; }
+.rank-name { flex: 1; font-size: 15px; font-weight: 700; }
+.rank-row.me .rank-name { color: var(--gold); }
+.rank-money { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green); letter-spacing: 1px; }
+.rank-sep { text-align: center; color: var(--dim); font-size: 18px; letter-spacing: 3px; }
+
+/* ============================================================
+   블랙잭
+   ============================================================ */
+.bj-table {
+  background: radial-gradient(ellipse at 50% 30%, rgba(40,120,70,.35), rgba(14,11,22,.6));
+  border: 1px solid var(--line); border-radius: var(--r);
+  padding: 16px; margin-bottom: 14px;
+}
+.bj-side { margin-bottom: 14px; }
+.bj-side:last-child { margin-bottom: 0; }
+.bj-label { font-size: 13px; color: var(--dim); margin-bottom: 8px; letter-spacing: 1px; }
+.bj-label b { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold); margin-left: 6px; }
+.bj-cards { display: flex; gap: 8px; min-height: 88px; flex-wrap: wrap; }
+.pcard {
+  width: 60px; height: 84px; flex-shrink: 0;
+  background: linear-gradient(155deg, #fff, #e2e6f0);
+  border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: #1a1426;
+  position: relative; animation: card-deal .35s cubic-bezier(.2,1.5,.4,1);
+}
+@keyframes card-deal { 0% { transform: translateY(-30px) rotate(-12deg); opacity: 0; } }
+.pcard.red { color: #d4203a; }
+.pcard.back { background: repeating-linear-gradient(45deg, #2e2240 0 8px, #3d2f52 8px 16px); color: var(--gold); }
+
+/* ============================================================
+   가위바위보
+   ============================================================ */
+.rps-stage { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 10px 0 16px; }
+.rps-hand {
+  width: 100px; height: 100px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52px;
+  background: var(--panel2); border: 1px solid var(--line);
+}
+.rps-hand.shake { animation: rps-shake .12s steps(2) infinite; }
+@keyframes rps-shake { 50% { transform: translateY(-8px); } }
+.rps-hand.win-h { border-color: var(--green); box-shadow: 0 0 22px rgba(94,240,160,.7); }
+.rps-hand.lose-h { opacity: .5; }
+.rps-vs { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--dim); }
+.rps-pick { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
+.rps-btn { font-size: 34px; padding: 10px 18px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.rps-btn span { font-family: 'Noto Sans KR'; font-size: 12px; color: var(--dim); }
+
+/* ============================================================
+   사다리 / 경마
+   ============================================================ */
+.ladder-starts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+.horse-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+.horse-btn.active, .ladder-start.active { background: var(--grad-gold); color: #2b1d00; border-color: #fff3c2; }
+#ladder-canvas, #horse-canvas, #paperboy-canvas, #store-canvas, #chef-canvas, #pilot-canvas, #ceo-canvas {
+  border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.5); background: #0e0b16;
+}
+
+/* ============================================================
+   대박 이펙트 강화 (티어별)
+   ============================================================ */
+.screen-flash {
+  position: fixed; inset: 0; z-index: 94; pointer-events: none;
+  background: #fff; opacity: 0;
+}
+.screen-flash.go { animation: flash .5s ease-out; }
+@keyframes flash { 0% { opacity: .85; } 100% { opacity: 0; } }
+
+.bigwin-rays {
+  position: absolute; top: 50%; left: 50%;
+  width: 240vmax; height: 240vmax;
+  margin: -120vmax 0 0 -120vmax;
+  background: repeating-conic-gradient(from 0deg, rgba(255,216,102,.0) 0deg 6deg, rgba(255,216,102,.16) 6deg 12deg);
+  opacity: 0; pointer-events: none;
+}
+.bigwin.show .bigwin-rays { opacity: 1; animation: rays-spin 9s linear infinite; }
+@keyframes rays-spin { to { transform: rotate(360deg); } }
+.bigwin-inner { position: relative; z-index: 1; }
+
+/* 티어별 색상/스케일 */
+.bigwin.tier-huge .bigwin-title { background: linear-gradient(180deg,#fff,#ffd866 45%,#ff9d3c 80%,#ffd866); filter: drop-shadow(0 0 34px rgba(255,170,40,.9)); }
+.bigwin.tier-mega .bigwin-title { background: linear-gradient(180deg,#fff,#ffe07a 40%,#ff5d7a 80%,#c792ff); filter: drop-shadow(0 0 40px rgba(255,93,122,.9)); }
+.bigwin.tier-jackpot .bigwin-title {
+  background: linear-gradient(90deg,#ff5d7a,#ffd866,#5ef0a0,#5ad0e6,#c792ff,#ff5d7a);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 48px rgba(255,255,255,.95));
+  animation: bigwin-in .55s cubic-bezier(.2,2.2,.4,1), jackpot-cycle 1.4s linear infinite !important;
+}
+@keyframes jackpot-cycle { to { background-position: 300% 0; } }
+.bigwin.tier-jackpot .bigwin-rays { background: repeating-conic-gradient(from 0deg, rgba(255,93,122,.0) 0deg 5deg, rgba(255,216,102,.22) 5deg 10deg); }
